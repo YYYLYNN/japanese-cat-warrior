@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>日語貓戰士：神偷鄰居花園大對決</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <style>
+    .active-subtitle { border-left: 4px solid #3b82f6; background-color: #1e293b; transform: translateX(4px); }
+    @keyframes pulse-gold { 0%, 100% { filter: drop-shadow(0 0 15px rgba(234, 179, 8, 0.7)); } 50% { filter: drop-shadow(0 0 30px rgba(245, 158, 11, 1)); } }
+    .winner-aura { animation: pulse-gold 1.8s infinite ease-in-out; }
+    
+    @keyframes float-up { 0% { opacity: 1; transform: translate(-50%, 0) scale(1); } 100% { opacity: 0; transform: translate(-50%, -60px) scale(1.4); } }
+    .coin-float { animation: float-up 1s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
+
+    @keyframes poop-bounce { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.15); } }
+    .poop-anim { animation: poop-bounce 1.2s infinite ease-in-out; cursor: pointer; }
+
+    /* 贏家天空煙火特效 */
+    @keyframes firework-burst {
+      0% { transform: scale(0.1); opacity: 1; }
+      50% { opacity: 1; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+    .firework {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: firework-burst 1.5s infinite ease-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans select-none">
+
+  <div id="coin-popup-container" class="fixed inset-0 pointer-events-none z-[999]"></div>
+
+  <!-- 頂部導覽列 -->
+  <header class="border-b border-slate-800 bg-slate-900/90 px-6 py-3 sticky top-0 z-50 flex flex-wrap justify-between items-center gap-3">
+    <div class="flex items-center space-x-3">
+      <span class="text-xl font-black tracking-tight text-white flex items-center gap-2">
+        <span>🏘️🐱</span> 鄰里花園對決
+      </span>
+      <span id="countdown-badge" class="bg-rose-500/20 text-rose-400 text-xs px-2.5 py-1 rounded-full font-bold border border-rose-500/30">
+        ⏳ 距 12/6 檢定倒數中...
+      </span>
+    </div>
+
+    <div class="flex flex-wrap bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs">
+      <button id="tab-arena" onclick="switchTab('arena')" class="px-3 py-1.5 rounded-md font-medium bg-blue-600 text-white transition">洋房對決 🏡💩</button>
+      <button id="tab-vocab" onclick="switchTab('vocab')" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">時雨N3五十詞 🖼️</button>
+      <button id="tab-daily-grammar" onclick="switchTab('daily-grammar')" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">今日文法(語音) 📖</button>
+      <button id="tab-calendar" onclick="switchTab('calendar')" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">12/6打卡表 📅</button>
+      <button id="tab-quiz" onclick="switchTab('quiz')" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">N3考古20題 📝</button>
+      <button id="tab-room" onclick="switchTab('room')" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">圓球貓衣櫥 🚪</button>
+      <button id="tab-shop" onclick="switchTab('shop')" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">服裝武具店 🛒</button>
+    </div>
+
+    <div class="flex items-center gap-3 bg-slate-950 px-3.5 py-1.5 rounded-lg border border-slate-800 text-xs">
+      <button onclick="openLoginModal()" id="btn-user-profile" class="text-blue-400 font-bold hover:underline flex items-center gap-1">
+        👤 <span id="current-user-name">阿寶</span>
+      </button>
+      <span class="text-slate-700">|</span>
+      <div class="flex items-center gap-1 text-yellow-400 font-mono font-black">
+        <span id="user-coins-badge">💰 10</span>
+      </div>
+      <div class="flex items-center gap-1 text-amber-400 font-mono font-black">
+        <span id="user-points-badge">0 pt</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 登入彈窗 -->
+  <div id="login-modal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+      <h3 class="text-lg font-black text-white flex items-center gap-2"><span>👤</span> 切換或建立貓主人帳號</h3>
+      <div>
+        <label class="text-xs text-slate-400 block mb-1">修煉者暱稱：</label>
+        <input id="login-username-input" type="text" placeholder="例如：阿寶" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeLoginModal()" class="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white">取消</button>
+        <button onclick="handleLoginSubmit()" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition">進入街區</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="flex-1 p-6 max-w-6xl mx-auto w-full">
+
+    <!-- ================= 模組 1：神偷奶爸街景風格「鄰居洋房花園對決」 ================= -->
+    <section id="section-arena" class="space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-3">
+          <label class="text-xs text-slate-400 font-medium">我的貓咪屋主：</label>
+          <input id="input-user-name" type="text" value="阿寶" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-blue-400 font-bold w-28 focus:outline-none focus:border-blue-500">
+          <button onclick="generateFriendLink()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3.5 py-2 rounded-lg font-bold transition flex items-center gap-1">
+            <span>🔗</span> 複製鄰居開戰連結
+          </button>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-slate-400">隔壁鄰居：</span>
+          <span id="display-friend-name-tag" class="text-sm font-bold text-rose-400">等待鄰居入住...</span>
+          <button onclick="resetDuelMatch()" class="text-xs text-slate-500 hover:text-slate-300 underline">雙方從 0 重新開跑</button>
+        </div>
+      </div>
+
+
+      <div class="bg-slate-900 border border-amber-500/20 rounded-2xl p-4 shadow-lg">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div>
+            <div class="text-sm font-black text-amber-300">☁️ GitHub-only 同步中心</div>
+            <p class="text-xs text-slate-400 mt-1">不使用 Firebase / Supabase。資料存在各自裝置；兩人之間用「同步碼」手動交換進度。</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="exportSyncCode()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-3 py-2 rounded-lg font-bold">📤 產生我的同步碼</button>
+            <button onclick="importSyncCode()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-3 py-2 rounded-lg font-bold">📥 匯入朋友同步碼</button>
+            <button onclick="copyDailyShare()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-2 rounded-lg font-bold">🔗 複製今日挑戰碼</button>
+          </div>
+        </div>
+        <div class="mt-3 text-[11px] text-slate-500 leading-relaxed">
+          建議：每天完成學習後按「產生我的同步碼」，把代碼傳給朋友；朋友完成後也傳回來。這是 GitHub 靜態網站能做到的安全做法，不會把帳號密碼放進 GitHub。
+        </div>
+      </div>
+
+      <!-- 神偷奶爸街景大對決舞台 (參考圖風格：古怪暗黑洋房 vs 美式紅白小洋房) -->
+      <div class="relative rounded-3xl overflow-hidden border-2 border-slate-800 bg-gradient-to-b from-indigo-950 via-slate-900 to-emerald-950 p-6 min-h-[440px] flex flex-col justify-between shadow-2xl">
+        
+        <!-- 房屋與天空街景區域 -->
+        <div class="grid grid-cols-2 gap-4 relative z-10">
+          
+          <!-- 左側：我家洋房 (深紫黑尖頂洋房風) -->
+          <div id="house-user" class="relative flex flex-col items-center">
+            <!-- 贏家天空煙火容器 -->
+            <div id="fireworks-user" class="absolute -top-6 inset-x-0 h-16 pointer-events-none hidden">
+              <span class="firework bg-yellow-400/80 -top-2 left-6"></span>
+              <span class="firework bg-rose-400/80 top-1 right-8" style="animation-delay: 0.5s;"></span>
+              <span class="firework bg-cyan-400/80 top-4 left-1/2" style="animation-delay: 1s;"></span>
+            </div>
+
+            <!-- 屋頂與煙囪結構 -->
+            <div class="w-40 sm:w-56 h-36 bg-gradient-to-b from-slate-900 to-indigo-950 border-2 border-slate-700 rounded-t-3xl relative flex flex-col items-center justify-end p-2 shadow-2xl">
+              <!-- 尖塔屋頂飾物 -->
+              <div class="absolute -top-5 w-8 h-8 bg-slate-850 rotate-45 border-t-2 border-l-2 border-indigo-400/60"></div>
+              <!-- 煙囪 -->
+              <div class="absolute -top-3 right-4 w-4 h-8 bg-indigo-950 border border-slate-700"></div>
+              <!-- 復古閣樓窗戶 -->
+              <div class="w-8 h-12 bg-amber-400/30 border-2 border-slate-650 rounded-t-full mb-3 flex items-center justify-center">
+                <span class="text-xs text-amber-200">🪟</span>
+              </div>
+              <div class="text-xs font-black text-blue-400 bg-black/60 px-3 py-0.5 rounded-full border border-blue-500/30">
+                <span id="label-user-house">我家大宅</span> (<span id="score-user-yard">0 pt</span>)
+              </div>
+            </div>
+
+            <!-- 洋房前院草皮花園 -->
+            <div class="w-48 sm:w-64 bg-emerald-800/40 border border-emerald-600/40 rounded-b-2xl p-4 flex flex-col items-center justify-between min-h-[140px] relative mt-1">
+              <!-- 我的圓球紙娃娃貓咪 -->
+              <div id="user-doll"></div>
+              <!-- 便便落點（如果我落後，草地只有一坨純便便） -->
+              <div id="poop-zone-user" class="h-10 flex items-center justify-center mt-1"></div>
+            </div>
+          </div>
+
+          <!-- 右側：鄰居洋房 (紅白經典排屋風) -->
+          <div id="house-friend" class="relative flex flex-col items-center">
+            <!-- 鄰居贏家煙火容器 -->
+            <div id="fireworks-friend" class="absolute -top-6 inset-x-0 h-16 pointer-events-none hidden">
+              <span class="firework bg-yellow-400/80 -top-2 left-6"></span>
+              <span class="firework bg-emerald-400/80 top-1 right-8" style="animation-delay: 0.6s;"></span>
+              <span class="firework bg-fuchsia-400/80 top-4 left-1/2" style="animation-delay: 1.1s;"></span>
+            </div>
+
+            <!-- 屋頂與煙囪結構 -->
+            <div class="w-40 sm:w-56 h-36 bg-gradient-to-b from-rose-950 to-slate-900 border-2 border-rose-900/60 rounded-t-3xl relative flex flex-col items-center justify-end p-2 shadow-2xl">
+              <div class="absolute -top-5 w-8 h-8 bg-rose-950 rotate-45 border-t-2 border-l-2 border-rose-500/60"></div>
+              <div class="absolute -top-3 left-4 w-4 h-8 bg-rose-950 border border-rose-900"></div>
+              <div class="w-8 h-12 bg-amber-400/30 border-2 border-rose-800 rounded-t-full mb-3 flex items-center justify-center">
+                <span class="text-xs text-amber-200">🪟</span>
+              </div>
+              <div class="text-xs font-black text-rose-400 bg-black/60 px-3 py-0.5 rounded-full border border-rose-500/30">
+                <span id="label-friend-house">鄰居排屋</span> (<span id="score-friend-yard">0 pt</span>)
+              </div>
+            </div>
+
+            <!-- 鄰居前院草皮花園 -->
+            <div class="w-48 sm:w-64 bg-emerald-800/40 border border-emerald-600/40 rounded-b-2xl p-4 flex flex-col items-center justify-between min-h-[140px] relative mt-1">
+              <!-- 鄰居圓球紙娃娃貓咪 -->
+              <div id="friend-doll"></div>
+              <!-- 鄰居便便落點（如果我領先，鄰居家只有一坨純便便） -->
+              <div id="poop-zone-friend" class="h-10 flex items-center justify-center mt-1"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 拔河進度長條 -->
+        <div class="mt-6 pt-4 border-t border-slate-800/80">
+          <div class="w-full h-3 bg-slate-950 rounded-full overflow-hidden flex border border-slate-800">
+            <div id="bar-user" class="h-full bg-blue-500 transition-all duration-500" style="width: 50%;"></div>
+            <div id="bar-friend" class="h-full bg-rose-500 transition-all duration-500" style="width: 50%;"></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= 模組 2：時雨の町 N3 權威核心單字 (50字全異) ================= -->
+    <section id="section-vocab" class="hidden flex flex-col items-center justify-center min-h-[75vh]">
+      <div id="vocab-study-card" class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl flex flex-col items-center text-center relative overflow-hidden transition-all duration-300">
+        <div class="w-full h-48 relative bg-black overflow-hidden border-b border-slate-800 group">
+          <img id="word-image" src="" alt="單字記憶錨點圖" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 filter brightness-90 contrast-125">
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-black/30"></div>
+          <div class="absolute top-3 left-3 flex gap-2">
+            <span id="word-level" class="bg-black/75 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-black border border-slate-700 text-blue-400">N3</span>
+            <span id="word-tag" class="bg-black/75 backdrop-blur-md px-2.5 py-1 rounded-full text-xs text-amber-300 font-bold border border-slate-700">時雨の町</span>
+          </div>
+          <span id="queue-remaining" class="absolute top-3 right-3 bg-black/75 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold text-amber-400 border border-slate-700">
+            配額剩餘：50 / 50
+          </span>
+          <div class="absolute bottom-2 left-3 right-3 text-left">
+            <p id="word-dramatic-hint" class="text-[11px] text-amber-200/90 font-medium tracking-wide drop-shadow-md line-clamp-1 italic">記憶線索</p>
+          </div>
+        </div>
+
+        <div class="p-6 w-full flex flex-col items-center">
+          <div class="my-2 relative flex flex-col items-center">
+            <div class="flex items-center gap-3">
+              <div id="word-kanji" class="text-4xl font-black text-white tracking-wide">アイロン</div>
+              <button onclick="playCurrentWordAudio()" title="重播發音 (R)" class="p-2 bg-slate-800 hover:bg-blue-600/40 text-blue-400 rounded-full border border-slate-700 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
+              </button>
+            </div>
+            <div id="word-kana" class="text-xl text-slate-400 font-medium mt-1">アイロン</div>
+          </div>
+
+          <div id="word-answer" class="hidden w-full border-t border-slate-800/80 pt-4 mt-2">
+            <div class="text-emerald-400 text-lg font-bold mb-2" id="word-meaning">熨斗</div>
+            <div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 text-left relative group">
+              <div class="flex justify-between items-start">
+                <div>
+                  <p class="text-xs font-semibold text-slate-200 leading-relaxed pr-6" id="word-example">シャツにアイロンをかける。</p>
+                  <p class="text-[11px] text-slate-400 mt-1" id="word-example-zh">給襯衫燙熨斗。</p>
+                </div>
+                <button onclick="playExampleAudio()" title="朗讀例句 (E)" class="text-slate-400 hover:text-emerald-400 transition p-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 flex gap-3 w-full">
+            <button id="btn-reveal" onclick="revealAnswer()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-xl font-bold border border-slate-700 transition shadow-lg">
+              查看翻譯與日常例句 (Space)
+            </button>
+          </div>
+
+          <div id="review-actions" class="hidden mt-4 grid grid-cols-2 gap-3 w-full">
+            <button onclick="handleResult(false)" class="py-3 bg-rose-950/50 hover:bg-rose-900/60 text-rose-300 border border-rose-800/60 rounded-xl font-bold transition">
+              忘記 / 扣1幣重排 (-1💰) (1)
+            </button>
+            <button onclick="handleResult(true)" class="py-3 bg-emerald-950/50 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/60 rounded-xl font-bold transition">
+              掌握 (+4pt, +2💰) (2)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 驗收測驗 -->
+      <div id="vocab-test-container" class="hidden w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-7 shadow-2xl relative">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-5">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl font-black text-white">⚡ 今日 50 字驗收</span>
+              <span class="bg-amber-500/20 text-amber-400 text-[10px] px-2 py-0.5 rounded font-bold border border-amber-500/30">錯題扣 1 💰</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">通過後可蓋貓爪打卡，並去鄰居洋房花園放便便！</p>
+          </div>
+          <span id="test-progress-text" class="text-xs font-mono font-bold text-blue-400">測驗 1 / 5</span>
+        </div>
+        <div id="test-question-box">
+          <div class="text-center py-4">
+            <span class="text-xs text-slate-400 block mb-2">請選出該單字的正確發音與意思：</span>
+            <div class="flex items-center justify-center gap-3">
+              <h3 id="test-q-target" class="text-3xl font-black text-white">アイロン</h3>
+              <button onclick="playTestWordAudio()" class="p-1.5 bg-slate-800 hover:bg-blue-600/40 text-blue-400 rounded-full border border-slate-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
+              </button>
+            </div>
+          </div>
+          <div id="test-options-grid" class="grid grid-cols-1 gap-2.5 mt-4"></div>
+          <div id="test-feedback-box" class="hidden mt-4 p-3.5 rounded-xl text-xs border"></div>
+          <div class="mt-5 flex justify-end">
+            <button id="btn-next-test" onclick="nextTestQuestion()" class="hidden bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition">下一題 ➔</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 模組 3：今日文法 (新增語音念法) ================= -->
+    <section id="section-daily-grammar" class="hidden max-w-3xl mx-auto space-y-6">
+      <div id="grammar-explain-card" class="bg-slate-900 border border-slate-800 rounded-3xl p-7 shadow-2xl relative">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-5">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">📖</span>
+            <div>
+              <span id="daily-gram-level" class="bg-blue-500/20 text-blue-400 text-xs px-2.5 py-0.5 rounded-full font-bold border border-blue-500/30">N3 焦點文法</span>
+              <div class="flex items-center gap-2 mt-1">
+                <h2 id="daily-gram-title" class="text-2xl font-black text-white">〜わけにはいかない</h2>
+                <!-- 文法發音按鈕 -->
+                <button onclick="speakJapanese('わけにはいかない')" class="p-1.5 bg-slate-800 hover:bg-blue-600/40 text-blue-400 rounded-full border border-slate-700 transition" title="朗讀文法句型">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4 text-sm leading-relaxed">
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+            <span class="text-xs text-slate-500 block font-semibold mb-1">【核心語意】</span>
+            <p id="daily-gram-meaning" class="text-slate-200 font-medium">基於社會常理、道德、法律或義務感，「在心理或情理上不能這麼做」。</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+              <span class="text-xs text-slate-500 block font-semibold mb-1">【接續方式】</span>
+              <p id="daily-gram-connection" class="text-blue-300 font-mono text-xs">動詞辭書形 / ない形 ＋ わけにはいかない</p>
+            </div>
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+              <span class="text-xs text-slate-500 block font-semibold mb-1">【常考陷阱】</span>
+              <p id="daily-gram-trap" class="text-rose-300 text-xs">注意「〜ないわけにはいかない」表示雙重否定＝「不得不做」。</p>
+            </div>
+          </div>
+
+          <!-- 文法生活例句 (附念法) -->
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <span class="text-xs text-slate-500 block font-semibold">【實戰例句與發音】</span>
+            <div class="border-l-2 border-blue-500 pl-3 flex justify-between items-center">
+              <div>
+                <p id="daily-gram-ex1" class="text-slate-200 font-medium">明日は大事な試験があるので、休むわけにはいかない。</p>
+                <p id="daily-gram-ex1-zh" class="text-xs text-slate-400 mt-0.5">明天有重要考試，因此絕不能請假。</p>
+              </div>
+              <button onclick="speakJapanese(document.getElementById('daily-gram-ex1').innerText)" class="p-1 text-slate-400 hover:text-emerald-400" title="朗讀例句">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-slate-800 flex justify-end">
+          <button onclick="startDailyGrammarTest()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition shadow-lg">
+            開始文法測驗！(答錯-1💰) ➔
+          </button>
+        </div>
+      </div>
+
+      <div id="grammar-test-card" class="hidden bg-slate-900 border border-slate-800 rounded-3xl p-7 shadow-2xl">
+        <div id="gram-test-box">
+          <h3 id="gram-test-question" class="text-base font-bold text-white mb-4 leading-relaxed">題目載入中</h3>
+          <div id="gram-test-options" class="grid grid-cols-1 gap-3"></div>
+          <div id="gram-test-feedback" class="hidden mt-4 p-4 rounded-xl text-xs border"></div>
+          <div class="mt-6 flex justify-end">
+            <button id="btn-finish-gram-test" onclick="finishDailyGrammarExam()" class="hidden bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-6 py-2.5 rounded-xl transition">
+              完成今日特訓 🏆
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 模組 4：12/6 打卡表 ================= -->
+    <section id="section-calendar" class="hidden max-w-4xl mx-auto space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-7 shadow-2xl">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-5 mb-6">
+          <div>
+            <h2 class="text-2xl font-black text-white flex items-center gap-2"><span>📅</span> 2026 JLPT 決戰打卡曆</h2>
+            <p class="text-xs text-slate-400 mt-1">堅持到 <strong class="text-rose-400 font-bold">12/6 (日) 檢定日</strong>！</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="changeMonth(-1)" class="p-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs">◀ 上個月</button>
+            <span id="calendar-month-year" class="font-bold text-sm text-blue-400 font-mono px-2">2026年 10月</span>
+            <button onclick="changeMonth(1)" class="p-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs">下個月 ▶</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-7 gap-2 text-center text-xs font-bold text-slate-400 mb-2">
+          <span class="text-rose-400">日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span class="text-blue-400">六</span>
+        </div>
+        <div id="calendar-days-grid" class="grid grid-cols-7 gap-2"></div>
+        <div class="mt-6 pt-4 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+          <span id="streak-total-display" class="font-bold text-amber-400">🔥 本月累積打卡：0 天</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 模組 5：N3 考古題 20 題 ================= -->
+    <section id="section-quiz" class="hidden max-w-3xl mx-auto py-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-6">
+          <div>
+            <h2 class="text-xl font-black text-white">JLPT N3 每日考古題試煉</h2>
+            <p class="text-xs text-slate-400 mt-1">答對 +10 pt、+5💰 | 答錯扣 1 💰！</p>
+          </div>
+          <span id="quiz-progress" class="text-sm font-bold text-blue-400 font-mono">第 1 / 20 題</span>
+        </div>
+        <div id="quiz-box">
+          <div id="quiz-question" class="text-lg font-bold text-slate-100 mb-6 leading-relaxed">題目載入中...</div>
+          <div id="quiz-options" class="grid grid-cols-1 gap-3"></div>
+          <div id="quiz-feedback" class="hidden mt-6 p-4 rounded-xl text-sm border"></div>
+          <div class="mt-6 flex justify-end">
+            <button id="btn-next-question" onclick="nextQuestion()" class="hidden bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-2.5 rounded-xl transition">下一題 ➔</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 模組 6：我的圓球小貓衣櫥 ================= -->
+    <section id="section-room" class="hidden max-w-4xl mx-auto space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl relative">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-6">
+          <div>
+            <h2 class="text-2xl font-black text-white flex items-center gap-2"><span>🚪👕</span> 圓滾滾小貓衣櫥</h2>
+            <p class="text-xs text-slate-400 mt-1">裝備實裝穿在圓滾滾的小球身體上！</p>
+          </div>
+          <div class="text-sm font-bold text-yellow-400">持有金幣：<span id="room-coins">💰 0</span></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+          <div class="md:col-span-5 bg-slate-950 p-6 rounded-2xl border border-slate-800 flex flex-col items-center text-center">
+            <div id="room-doll" class="my-4"></div>
+            <span id="room-cat-name-display" class="font-black text-lg text-white">阿寶貓</span>
+          </div>
+
+          <div class="md:col-span-7 flex flex-col space-y-4">
+            <h3 class="text-sm font-bold text-slate-300">🎒 我的裝備庫存</h3>
+            <div id="inventory-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 模組 7：服裝武具商店 ================= -->
+    <section id="section-shop" class="hidden max-w-4xl mx-auto space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-7 shadow-2xl">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-6">
+          <h2 class="text-2xl font-black text-white flex items-center gap-2"><span>🛒🐾</span> 貓咪精選服飾裝備店</h2>
+          <div class="text-base font-bold text-yellow-400">持有金幣：<span id="shop-coins">💰 0</span></div>
+        </div>
+        <div id="shop-items-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // -------------------------------------------------------------------------
+    // 0. 音效與紙娃娃裝備系統 (Web Audio API)
+    // -------------------------------------------------------------------------
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    function initAudio() { if (!audioCtx) audioCtx = new AudioCtx(); }
+
+    function playCoinSound() {
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        const now = audioCtx.currentTime;
+        osc.frequency.setValueAtTime(987.77, now);
+        osc.frequency.setValueAtTime(1318.51, now + 0.08);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc.start(now); osc.stop(now + 0.35);
+      } catch (e) {}
+    }
+
+    function playLoseCoinSound() {
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'sawtooth';
+        const now = audioCtx.currentTime;
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.linearRampToValueAtTime(130, now + 0.25);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.start(now); osc.stop(now + 0.25);
+      } catch (e) {}
+    }
+
+    function playCleanPoopSound() {
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'triangle';
+        const now = audioCtx.currentTime;
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.linearRampToValueAtTime(800, now + 0.15);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.start(now); osc.stop(now + 0.25);
+      } catch (e) {}
+    }
+
+    function triggerCoinPopup(amount) {
+      const container = document.getElementById('coin-popup-container');
+      const el = document.createElement('div');
+      const isPositive = amount > 0;
+      el.className = `fixed left-1/2 top-1/2 coin-float font-black text-2xl drop-shadow-lg px-4 py-2 rounded-2xl border ${
+        isPositive ? 'bg-amber-500/20 text-yellow-300 border-amber-500/50' : 'bg-rose-500/20 text-rose-400 border-rose-500/50'
+      }`;
+      el.innerText = isPositive ? `+${amount} 💰` : `${amount} 💰`;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 1000);
+    }
+
+    function speakJapanese(text, rate = 0.9) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ja-JP'; utterance.rate = rate;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function playCurrentWordAudio() { if (vocabQueue.length > 0) speakJapanese(vocabQueue[0].kana); }
+    function playExampleAudio() { if (vocabQueue.length > 0) speakJapanese(vocabQueue[0].example, 0.95); }
+    function playTestWordAudio() { if (currentTestItem) speakJapanese(currentTestItem.kana); }
+
+    // -------------------------------------------------------------------------
+    // 1. 原創多樣風格服飾與武具目錄 (新增多種不同衣服風格)
+    // -------------------------------------------------------------------------
+    const SHOP_CATALOG = [
+      // 武器系列
+      { id: "wp_1", type: "weapon", name: "🐾 木天蓼小法杖", price: 20, desc: "初學者木天蓼短杖，揮起來帶點薄荷香！", visual: "🪄" },
+      { id: "wp_2", type: "weapon", name: "🐟 香烤秋刀魚刃", price: 80, desc: "剛烤好散發香氣的秋刀魚，威力不容小覷！", visual: "🐟" },
+      { id: "wp_3", type: "weapon", name: "🗡️ 居合道貓斬打刀", price: 180, desc: "精鋼鍛造的流浪武士佩刀，切碎難題！", visual: "🗡️" },
+      { id: "wp_4", type: "weapon", name: "⚡ 神聖雷光掌刃", price: 350, desc: "閃爍著金色雷光的傳說神器！", visual: "⚡" },
+
+      // 多樣風格服裝系列 (衣服穿在小球肚子身體上)
+      { id: "cl_1", type: "clothing", name: "🎽 菜鳥印花小背心", price: 25, desc: "純棉透氣小背心，可愛休閒風！", visual: "🎽" },
+      { id: "cl_2", type: "clothing", name: "🥋 浪人流浪羽織", price: 100, desc: "深藍色日式浪人羽織和服，傳統武道風。", visual: "🥋" },
+      { id: "cl_3", type: "clothing", name: "🦖 綠色恐龍睡衣", price: 160, desc: "超萌的綠色小恐龍連身家居睡衣！", visual: "🦖" },
+      { id: "cl_4", type: "clothing", name: "🕴️ 神偷俐落黑西裝", price: 240, desc: "修身帥氣的特務黑西裝，氣場全開！", visual: "🕴️️" },
+      { id: "cl_5", type: "clothing", name: "👘 夏日煙火祭典浴衣", price: 280, desc: "繡有櫻花與錦鯉的祭典浴衣，優雅華麗。", visual: "👘" },
+      { id: "cl_6", type: "clothing", name: "👑 國王天鵝絨披風錦袍", price: 420, desc: "紅金色天鵝絨皇家長袍，唯有贏家才配享有！", visual: "👑" },
+
+      // 頭部造型
+      { id: "ht_1", type: "hat", name: "🍞 烤土司切片頭套", price: 30, desc: "把小球貓臉卡在土司中間，爆笑經典！", visual: "🍞" },
+      { id: "ht_2", type: "hat", name: "🐙 咬住頭的章魚帽", price: 120, desc: "一隻粉紅小章魚緊緊抱住頭頂！", visual: "🐙" },
+      { id: "ht_3", type: "hat", name: "👑 傲嬌純金皇冠", price: 320, desc: "閃爍金光的純金王冠！", visual: "👑" }
+    ];
+
+    // -------------------------------------------------------------------------
+    // 2. 使用者狀態管理
+    // -------------------------------------------------------------------------
+    let currentUsername = localStorage.getItem('cat_current_user') || '阿寶';
+    function getUserDataKey(username) { return `cat_garden_user_${username}`; }
+
+    function loadUserData(username) {
+      const defaultData = {
+        name: username,
+        coins: 20,
+        points: 0,
+        attendance: {},
+        cleanedPoopToday: false,
+        ownedItems: ["wp_1", "cl_1"],
+        equipped: { weapon: "wp_1", clothing: "cl_1", hat: null }
+      };
+      const raw = localStorage.getItem(getUserDataKey(username));
+      return raw ? JSON.parse(raw) : defaultData;
+    }
+
+    let userState = loadUserData(currentUsername);
+    let duelState = JSON.parse(localStorage.getItem('cat_garden_duel') || JSON.stringify({
+      friendName: "隔壁老皮貓",
+      friendPoints: 0,
+      friendEquipped: { weapon: "wp_2", clothing: "cl_2", hat: "ht_1" }
+    }));
+
+    function saveAll() {
+      localStorage.setItem(getUserDataKey(userState.name), JSON.stringify(userState));
+      localStorage.setItem('cat_current_user', userState.name);
+      localStorage.setItem('cat_garden_duel', JSON.stringify(duelState));
+      broadcastMyDuelScore();
+      updateAllUI();
+    }
+
+    function addRewards(pts, coins) {
+      userState.points += pts;
+      userState.coins += coins;
+      if (coins > 0) {
+        playCoinSound();
+        triggerCoinPopup(coins);
+      }
+      saveAll();
+    }
+
+    function deductCoin(coins = 1) {
+      userState.coins = Math.max(0, userState.coins - coins);
+      playLoseCoinSound();
+      triggerCoinPopup(-coins);
+      saveAll();
+    }
+
+    function openLoginModal() {
+      document.getElementById('login-username-input').value = userState.name;
+      document.getElementById('login-modal').classList.remove('hidden');
+    }
+    function closeLoginModal() {
+      document.getElementById('login-modal').classList.add('hidden');
+    }
+    function handleLoginSubmit() {
+      const val = document.getElementById('login-username-input').value.trim();
+      if (!val) return;
+      currentUsername = val;
+      userState = loadUserData(val);
+      saveAll();
+      closeLoginModal();
+      initVocabSession();
+      renderCalendar();
+      alert(`歡迎回來，貓主人【${val}】！您的洋房與裝備已準備就緒！`);
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. 圓滾滾小球貓咪 (Chibi Ball Cat) 紙娃娃生成
+    // -------------------------------------------------------------------------
+    function generateBallCatHTML(equipped, isWinning = false) {
+      const wpItem = SHOP_CATALOG.find(i => i.id === equipped.weapon);
+      const clItem = SHOP_CATALOG.find(i => i.id === equipped.clothing);
+      const htItem = SHOP_CATALOG.find(i => i.id === equipped.hat);
+
+      const wpIcon = wpItem ? wpItem.visual : '';
+      const clIcon = clItem ? clItem.visual : '';
+      const htIcon = htItem ? htItem.visual : '';
+
+      return `
+        <div class="relative w-28 h-28 flex items-center justify-center ${isWinning ? 'winner-aura' : ''}">
+          
+          <!-- 1. 圓球貓咪身體 (Chibi Ball Body + 耳朵與小爪) -->
+          <div class="relative w-20 h-20 bg-gradient-to-b from-amber-100 to-amber-200 border-2 border-amber-900 rounded-full shadow-lg flex flex-col items-center justify-center z-10">
+            <!-- 兩隻小貓耳 -->
+            <div class="absolute -top-2 left-2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[12px] border-b-amber-300"></div>
+            <div class="absolute -top-2 right-2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[12px] border-b-amber-300"></div>
+            
+            <!-- 萌系五官 -->
+            <div class="flex gap-3 text-xs mb-1">
+              <span>●</span><span>●</span>
+            </div>
+            <div class="text-[9px] text-amber-900 leading-none">ω</div>
+          </div>
+
+          <!-- 2. 衣服圖層：緊緊套在小球肚子上 -->
+          ${clIcon ? `
+            <div class="absolute bottom-4 left-1/2 -translate-x-1/2 text-3xl z-20 pointer-events-none drop-shadow">
+              ${clIcon}
+            </div>
+          ` : ''}
+
+          <!-- 3. 頭飾圖層：戴在小球頭頂 -->
+          ${htIcon ? `
+            <div class="absolute -top-2 left-1/2 -translate-x-1/2 text-3xl z-30 pointer-events-none drop-shadow">
+              ${htIcon}
+            </div>
+          ` : ''}
+
+          <!-- 4. 右手持握武器：拿在小短手上 -->
+          ${wpIcon ? `
+            <div class="absolute bottom-2 -right-1 text-3xl z-20 pointer-events-none drop-shadow transform rotate-12">
+              ${wpIcon}
+            </div>
+          ` : ''}
+
+        </div>
+      `;
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. 花園對決、贏家煙火與純便便邏輯
+    // -------------------------------------------------------------------------
+    function updateGardenBattle() {
+      const userPts = userState.points;
+      const friendPts = duelState.friendPoints;
+      
+      const isUserWinning = userPts > friendPts;
+      const isFriendWinning = friendPts > userPts;
+
+      // 拔河進度更新
+      const total = userPts + friendPts;
+      let userPercent = 50;
+      if (total > 0) userPercent = Math.min(Math.max((userPts / total) * 100, 10), 90);
+      document.getElementById('bar-user').style.width = `${userPercent}%`;
+      document.getElementById('bar-friend').style.width = `${100 - userPercent}%`;
+
+      document.getElementById('score-user-yard').innerText = `${userPts} pt`;
+      document.getElementById('score-friend-yard').innerText = `${friendPts} pt`;
+      document.getElementById('label-user-house').innerText = `${userState.name}大宅`;
+      document.getElementById('label-friend-house').innerText = `${duelState.friendName}排屋`;
+
+      // 渲染圓球貓咪紙娃娃
+      document.getElementById('user-doll').innerHTML = generateBallCatHTML(userState.equipped, isUserWinning);
+      document.getElementById('friend-doll').innerHTML = generateBallCatHTML(duelState.friendEquipped, isFriendWinning);
+
+      const fwUser = document.getElementById('fireworks-user');
+      const fwFriend = document.getElementById('fireworks-friend');
+      const poopUser = document.getElementById('poop-zone-user');
+      const poopFriend = document.getElementById('poop-zone-friend');
+
+      // 1. 贏家天空煙火控制
+      if (isUserWinning) {
+        fwUser.classList.remove('hidden');
+        fwFriend.classList.add('hidden');
+      } else if (isFriendWinning) {
+        fwFriend.classList.remove('hidden');
+        fwUser.classList.add('hidden');
+      } else {
+        fwUser.classList.add('hidden');
+        fwFriend.classList.add('hidden');
+      }
+
+      // 2. 輸家花園大便（純便便，無文字說明）
+      if (isUserWinning) {
+        poopUser.innerHTML = '';
+        // 鄰居落後：鄰居家花園正中央直接一坨跳動的大便！
+        poopFriend.innerHTML = `<span class="text-3xl poop-anim" title="偷大的一坨便便！">💩</span>`;
+      } else if (isFriendWinning) {
+        poopFriend.innerHTML = '';
+        // 我家落後：我家花園直接出現一坨大便，點一下就清掉！
+        if (!userState.cleanedPoopToday) {
+          poopUser.innerHTML = `<span onclick="cleanMyYardPoop()" class="text-3xl poop-anim" title="點擊立即清理便便！">💩</span>`;
+        } else {
+          poopUser.innerHTML = `<span class="text-xs text-amber-300">🧹</span>`;
+        }
+      } else {
+        poopUser.innerHTML = '';
+        poopFriend.innerHTML = '';
+      }
+    }
+
+    function cleanMyYardPoop() {
+      playCleanPoopSound();
+      userState.cleanedPoopToday = true;
+      saveAll();
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. 權威時雨の町 (Sigure) N3 核心 50 單字庫 (50個完全相異單字)
+    // -------------------------------------------------------------------------
+    const FULL_50_VOCABULARY = [
+      { id: 1, level: "N3", kanji: "アイロン", kana: "アイロン", meaning: "熨斗", example: "出かける前にシャツにアイロンをかける。", example_zh: "出門前用熨斗燙襯衫。", tag: "生活家電", hint: "冒出陣陣白煙燙平皺褶的熨斗", image: "https://images.unsplash.com/photo-1584281722572-6844d18ffcf3?w=600&auto=format&fit=crop&q=80" },
+      { id: 2, level: "N3", kanji: "合図", kana: "あいず", meaning: "信號、暗號", example: "手を振って出発の合図をした。", example_zh: "揮手發出出發的信號。", tag: "交流信號", hint: "黑夜中燈塔射出的破曉信號光", image: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80" },
+      { id: 3, level: "N3", kanji: "曖昧", kana: "あいまい", meaning: "含糊、曖昧不清", example: "曖昧な返事をして相手を困らせた。", example_zh: "含糊的回答讓對方感到困擾。", tag: "人際溝通", hint: "大霧籠罩看不清邊界的前方道路", image: "https://images.unsplash.com/photo-1487621167305-5d248087c724?w=600&auto=format&fit=crop&q=80" },
+      { id: 4, level: "N3", kanji: "空き", kana: "あき", meaning: "空隙、空缺、空房", example: "このホテルにはまだ部屋の空きがある。", example_zh: "這間飯店還有空房。", tag: "住宿預約", hint: "空曠無人等待入住的木質客房", image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&auto=format&fit=crop&q=80" },
+      { id: 5, level: "N3", kanji: "握手", kana: "あくしゅ", meaning: "握手", example: "交渉がまとまり、笑顔で握手した。", example_zh: "談判順利達成，笑著握手致意。", tag: "商務外交", hint: "兩隻有力手掌堅定握合的特寫", image: "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?w=600&auto=format&fit=crop&q=80" },
+      { id: 6, level: "N3", kanji: "憧れる", kana: "あこがれる", meaning: "憧憬、嚮往", example: "子供の頃から宇宙飛行士に憧れていた。", example_zh: "從小就非常嚮往成為太空人。", tag: "夢想願景", hint: "仰望浩瀚繁星的孩子眼眸", image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&auto=format&fit=crop&q=80" },
+      { id: 7, level: "N3", kanji: "預かる", kana: "あずかる", meaning: "保管、代為照顧", example: "旅行中、隣の人の荷物を預かった。", example_zh: "旅行期間幫鄰居代為保管了行李。", tag: "鄰里互助", hint: "慎重鎖進金屬保險庫的重要手提箱", image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80" },
+      { id: 8, level: "N3", kanji: "扱う", kana: "あつかう", meaning: "操作、對待、處理", example: "壊れやすい物ですから、丁寧に扱ってください。", example_zh: "因為是易碎品，請小心輕放對待。", tag: "工作指示", hint: "雙手捧起晶瑩脆弱的琉璃藝術品", image: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=600&auto=format&fit=crop&q=80" },
+      { id: 9, level: "N3", kanji: "誤り", kana: "あやまり", meaning: "錯誤、失誤", example: "書類に計算の誤りがないか確認する。", example_zh: "核對文件中有沒有計算上的錯誤。", tag: "職場細節", hint: "紅色鉛筆圈出的試卷錯誤算式", image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&auto=format&fit=crop&q=80" },
+      { id: 10, level: "N3", kanji: "改める", kana: "あらためる", meaning: "修改、重新更正", example: "悪い習慣を改めて、早寝早起きにする。", example_zh: "改正不良習慣，養成早睡早起。", tag: "生活自律", hint: "撕下舊日曆寫下新目標的羽毛筆", image: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=600&auto=format&fit=crop&q=80" },
+      { id: 11, level: "N3", kanji: "安定", kana: "あんてい", meaning: "穩定、平穩", example: "患者の容態は現在安定しています。", example_zh: "病患的病情目前十分穩定。", tag: "醫療健康", hint: "平靜如鏡毫無波瀾的湖面", image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop&q=80" },
+      { id: 12, level: "N3", kanji: "案内", kana: "あんない", meaning: "引導、導覽", example: "新しく入った社員を社内に案内する。", example_zh: "帶領新進員工參觀導覽公司內部。", tag: "商務常識", hint: "親切向前伸手引導方向的接待員", image: "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=600&auto=format&fit=crop&q=80" },
+      { id: 13, level: "N3", kanji: "育児", kana: "いくじ", meaning: "育兒、帶小孩", example: "夫婦で協力して育児に取り組んでいる。", example_zh: "夫妻同心合力共同投入育兒。", tag: "家庭生活", hint: "推著嬰兒車散步的幸福背影", image: "https://images.unsplash.com/photo-1511895426328-dc8714191300?w=600&auto=format&fit=crop&q=80" },
+      { id: 14, level: "N3", kanji: "慌てる", kana: "あわてる", meaning: "慌張、手忙腳亂", example: "地震が起きても慌てずに身を守ろう。", example_zh: "就算發生地震也不要慌張，先保護好自己。", tag: "防災逃生", hint: "奔跑中手裡散落一地文件的路人", image: "https://images.unsplash.com/photo-1516912481808-3406841bd33c?w=600&auto=format&fit=crop&q=80" },
+      { id: 15, level: "N3", kanji: "意識", kana: "いしき", meaning: "意識、警覺、自覺", example: "日頃から健康を意識して運動する。", example_zh: "平時就自覺注重健康並積極運動。", tag: "自律修煉", hint: "深邃黑夜中爆發的神經光脈", image: "https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=600&auto=format&fit=crop&q=80" },
+      { id: 16, level: "N3", kanji: "維持", kana: "いじ", meaning: "維持、保持", example: "健康を維持するために野菜を食べる。", example_zh: "為了維持健康每天多吃蔬菜。", tag: "保健養生", hint: "完美保持在鋼索正中央的平衡木", image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600&auto=format&fit=crop&q=80" },
+      { id: 17, level: "N3", kanji: "居眠り", kana: "いねむり", meaning: "打瞌睡", example: "授業中に居眠りをして先生に怒られた。", example_zh: "上課打瞌睡被老師訓斥了一頓。", tag: "校園日常", hint: "午後陽光下頭一點一點打盹的學生", image: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=600&auto=format&fit=crop&q=80" },
+      { id: 18, level: "N3", kanji: "違反", kana: "いはん", meaning: "違背、違反", example: "交通ルールに違反すると罰金を取られる。", example_zh: "違反交通規則會被處以罰款。", tag: "法規法律", hint: "閃爍紅藍警示燈的執法巡邏車", image: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=600&auto=format&fit=crop&q=80" },
+      { id: 19, level: "N3", kanji: "依頼", kana: "いらい", meaning: "委託、請託", example: "弁護士に契約書の作成を依頼した。", example_zh: "委託律師製作了正式合約書。", tag: "商務法律", hint: "桌前雙方遞交簽名委託狀", image: "https://images.unsplash.com/photo-1450133064473-71024230f91b?w=600&auto=format&fit=crop&q=80" },
+      { id: 20, level: "N3", kanji: "医療", kana: "いりょう", meaning: "醫療", example: "現代の医療技術は急速に進歩している。", example_zh: "現代醫療技術正在急速進步。", tag: "醫學科技", hint: "現代化無菌手術室裡的監測儀表", image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80" },
+      { id: 21, level: "N3", kanji: "岩", kana: "いわ", meaning: "岩石、巨石", example: "波が激しく海岸の岩に打ち寄せている。", example_zh: "海浪猛烈拍打著海岸的岩石。", tag: "自然地理", hint: "矗立在驚濤駭浪中的黑色險峻巨岩", image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&auto=format&fit=crop&q=80" },
+      { id: 22, level: "N3", kanji: "印刷", kana: "いんさつ", meaning: "列印、印刷", example: "会議の資料を20部印刷してください。", example_zh: "請將會議資料列印20份。", tag: "辦公行政", hint: "高速吐出整齊文件的現代印表機", image: "https://images.unsplash.com/photo-1512428559087-560fa5ceab42?w=600&auto=format&fit=crop&q=80" },
+      { id: 23, level: "N3", kanji: "印象", kana: "いんしょう", meaning: "印象", example: "彼女の第一印象はとても明るかった。", example_zh: "她給人的第一印象非常開朗。", tag: "人際觀感", hint: "令人難以忘懷的真誠笑容面孔", image: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&auto=format&fit=crop&q=80" },
+      { id: 24, level: "N3", kanji: "引退", kana: "いんたい", meaning: "退休、退役", example: "長年活躍した名選手が引退を表明した。", example_zh: "活躍多年的明星選手宣布了退役。", tag: "體育人物", hint: "掛在球場更衣室櫃子裡的退役球衣", image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&auto=format&fit=crop&q=80" },
+      { id: 25, level: "N3", kanji: "引用", kana: "いんよう", meaning: "引用", example: "論文を書く時は出典を正しく引用する。", example_zh: "寫論文時應正確引用文獻出處。", tag: "學術寫作", hint: "厚重古老辭典中被熒光筆標註的文字", image: "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=600&auto=format&fit=crop&q=80" },
+      { id: 26, level: "N3", kanji: "有無", kana: "うむ", meaning: "有無、有沒有", example: "経験の有無にかかわらず、応募できます。", example_zh: "不論有沒有經驗都可以應徵報名。", tag: "招募求職", hint: "天平兩端衡量有無的秤盤", image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop&q=80" },
+      { id: 27, level: "N3", kanji: "埋める", kana: "うめる", meaning: "填埋、填補", example: "穴を土でしっかりと埋めて平らにする。", example_zh: "用泥土把坑洞填平補滿。", tag: "工程動作", hint: "鐵鏟將泥土填入樹坑的瞬間", image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&auto=format&fit=crop&q=80" },
+      { id: 28, level: "N3", kanji: "敬う", kana: "うやまう", meaning: "尊敬、崇敬", example: "お年寄りを敬う心を持つことが大切だ。", example_zh: "懷抱尊敬長輩的心意非常重要。", tag: "道德教養", hint: "雙手合十向神像或長者虔誠鞠躬", image: "https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80" },
+      { id: 29, level: "N3", kanji: "裏切る", kana: "うらぎる", meaning: "背叛、辜負", example: "ファンの期待を裏切らないよう努力する。", example_zh: "努力不辜負粉絲們的殷切期望。", tag: "情緒故事", hint: "背後暗藏匕首的決絕陰影", image: "https://images.unsplash.com/photo-1508873696983-2df5293cb32f?w=600&auto=format&fit=crop&q=80" },
+      { id: 30, level: "N3", kanji: "占う", kana: "うらなう", meaning: "占卜、算命", example: "タロットカードで今年の運勢を占う。", example_zh: "用塔羅牌占卜今年的整體運勢。", tag: "神秘趣味", hint: "燭光下排列神秘幾何的塔羅牌卡", image: "https://images.unsplash.com/photo-1514632595-4944383f2737?w=600&auto=format&fit=crop&q=80" },
+      { id: 31, level: "N3", kanji: "売上", kana: "うりあげ", meaning: "營業額、銷售額", example: "今月の売上は前年を大幅に上回った。", example_zh: "這個月的銷售額大幅超越了去年同期。", tag: "商業財經", hint: "筆記型電腦上持續飆升的綠色數據折線圖", image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80" },
+      { id: 32, level: "N3", kanji: "運賃", kana: "うんちん", meaning: "車費、客運運費", example: "来月から電車の運賃が少し値上げされる。", example_zh: "下個月起電車的票價會微幅調漲。", tag: "通勤生活", hint: "在自動售票機投下叮噹硬幣", image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&auto=format&fit=crop&q=80" },
+      { id: 33, level: "N3", kanji: "影響", kana: "えいきょう", meaning: "影響、波及", example: "台風の影響で新幹線のダイヤが乱れた。", example_zh: "受颱風影響新幹線時刻表大幅延誤。", tag: "日檢必考", hint: "撕裂雲層震撼城市的紫色雷暴", image: "https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?w=600&auto=format&fit=crop&q=80" },
+      { id: 34, level: "N3", kanji: "栄養", kana: "えいよう", meaning: "營養", example: "バランスの取れた栄養のある食事を摂る。", example_zh: "攝取營養均衡豐富的餐點飲食。", tag: "健康管理", hint: "鮮綠飽滿的蔬菜與豐富水果籃", image: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=600&auto=format&fit=crop&q=80" },
+      { id: 35, level: "N3", kanji: "笑顔", kana: "えがお", meaning: "笑容、笑臉", example: "彼女の優しい笑顔に誰もが癒やされる。", example_zh: "每個人都被她溫暖療癒的笑臉所打動。", tag: "生活美好", hint: "陽光灑在臉龐燦爛動人的微笑", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80" },
+      { id: 36, level: "N3", kanji: "描く", kana: "えがく", meaning: "描繪、畫出", example: "理想の将来の姿を心の中に描く。", example_zh: "在內心中描繪出理想的未來姿態。", tag: "藝術寫真", hint: "畫布上油畫筆刷調和出的夢幻星空", image: "https://images.unsplash.com/photo-1460661419200-14309c693a8d?w=600&auto=format&fit=crop&q=80" },
+      { id: 37, level: "N3", kanji: "えさ", kana: "えさ", meaning: "飼料、餌", example: "毎朝決まった時間に犬にえさを与える。", example_zh: "每天早晨固定時間給狗狗餵食飼料。", tag: "寵物照顧", hint: "小狗迫不及待盯著金屬碗裡的糧食", image: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=600&auto=format&fit=crop&q=80" },
+      { id: 38, level: "N3", kanji: "得難い", kana: "えがたい", meaning: "難得的、不可多得的", example: "彼のような親友は人生で得難い宝物だ。", example_zh: "像他這樣的好友是人生中不可多得的寶藏。", tag: "高級修辭", hint: "在岩壁深處綻放的光輝純淨鑽石", image: "https://images.unsplash.com/photo-1533227268428-f9ed0900fb3b?w=600&auto=format&fit=crop&q=80" },
+      { id: 39, level: "N3", kanji: "延期", kana: "えんき", meaning: "延期、延後", example: "雨のため、運動会は来週に延期された。", example_zh: "因為下雨，運動會延期到了下星期。", tag: "活動日程", hint: "日曆上的日期被劃掉並箭頭移至下周", image: "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=600&auto=format&fit=crop&q=80" },
+      { id: 40, level: "N3", kanji: "演技", kana: "えんぎ", meaning: "演技、表演", example: "彼の迫真の演技に観客は涙を流した。", example_zh: "他逼真動人的演技讓全場觀眾感動落淚。", tag: "影視藝術", hint: "舞台聚光燈下全情投入的戲劇演員", image: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=600&auto=format&fit=crop&q=80" },
+      { id: 41, level: "N3", kanji: "援助", kana: "えんじょ", meaning: "援助、救助", example: "被災地へ向けた物資の援助活動が始まった。", example_zh: "向受災地區運送物資的援助行動展開了。", tag: "人道關懷", hint: "空中空投救援箱飄揚向受災地區", image: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=600&auto=format&fit=crop&q=80" },
+      { id: 42, level: "N3", kanji: "演説", kana: "えんぜつ", meaning: "演講、演說", example: "広場に集まった大勢の市民を前に演説した。", example_zh: "在聚集於廣場的眾多市民面前進行了演講。", tag: "公開發表", hint: "站立於講台前激情演說的領袖身姿", image: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=600&auto=format&fit=crop&q=80" },
+      { id: 43, level: "N3", kanji: "演奏", kana: "えんそう", meaning: "演奏、彈奏", example: "オーケストラの素晴らしい演奏に感動した。", example_zh: "被管弦樂團美妙無比的現場演奏深深感動。", tag: "音樂藝術", hint: "琴弦震動流瀉出金光旋律的大提琴", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80" },
+      { id: 44, level: "N3", kanji: "遠慮", kana: "えんりょ", meaning: "客氣、顧忌、推辭", example: "遠慮なさらずに、自由にご意見をお聞かせください。", example_zh: "請不用客氣，請隨意發表您的寶貴意見。", tag: "敬語交際", hint: "雙手謙遜推託茶點的優雅禮貌神情", image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&auto=format&fit=crop&q=80" },
+      { id: 45, level: "N3", kanji: "御礼", kana: "おれい", meaning: "致謝、謝禮", example: "お世話になった方へ御礼の手紙を送った。", example_zh: "向承蒙照顧的前輩寄出了正式感謝信函。", tag: "日式禮品", hint: "包裹著水引結繩的精緻日式謝禮盒", image: "https://images.unsplash.com/photo-1513151233558-d860c5398176?w=600&auto=format&fit=crop&q=80" },
+      { id: 46, level: "N3", kanji: "及ぼす", kana: "およぼす", meaning: "帶來、影響到（通常用於嚴重負面）", example: "環境汚染が生態系に深刻な害を及ぼしている。", example_zh: "環境污染給自然生態系統帶來了嚴重的危害。", tag: "長篇考題", hint: "工業黑煙覆蓋下乾裂荒涼的大地", image: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&auto=format&fit=crop&q=80" },
+      { id: 47, level: "N3", kanji: "恩恵", kana: "おんけい", meaning: "恩惠、恩澤、好處", example: "私たちは科学技術の恩恵を受けて暮らしている。", example_zh: "我們生活在科技帶來的諸多恩澤之中。", tag: "哲學科普", hint: "雨露均霑滋潤整片麥田的甘霖", image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=600&auto=format&fit=crop&q=80" },
+      { id: 48, level: "N3", kanji: "温暖", kana: "おんだん", meaning: "溫暖、氣候溫和", example: "この地域は年間を通して温暖で過ごしやすい。", example_zh: "這個地區全年氣候溫和宜人，非常適合居住。", tag: "地理氣候", hint: "陽光溫煦微風吹拂的地中海小鎮", image: "https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?w=600&auto=format&fit=crop&q=80" },
+      { id: 49, level: "N3", kanji: "温度", kana: "おんど", meaning: "溫度、氣溫", example: "エアコンの設定温度を26度に調節する。", example_zh: "將冷氣的設定溫度調節為26度。", tag: "日常生活", hint: "牆上水銀柱緩緩升高的精準溫度計", image: "https://images.unsplash.com/photo-1501139083538-0139583c060f?w=600&auto=format&fit=crop&q=80" },
+      { id: 50, level: "N3", kanji: "応援", kana: "おうえん", meaning: "加油、支援、應援", example: "スタジアムで地元のサッカーチームを大声で応援した。", example_zh: "在球場為當地的足球隊大聲歡呼加油！", tag: "熱血賽事", hint: "看台上萬人揮舞藍色旗幟高喊加油", image: "https://images.unsplash.com/photo-1517976487507-579240405230?w=600&auto=format&fit=crop&q=80" }
+    ];
+
+    let vocabQueue = [];
+    function initVocabSession() {
+      vocabQueue = [...FULL_50_VOCABULARY];
+      renderCurrentWord();
+    }
+
+    function renderCurrentWord() {
+      if (vocabQueue.length === 0) {
+        startDailyVocabTest();
+        return;
+      }
+      const item = vocabQueue[0];
+      document.getElementById('word-level').innerText = item.level;
+      document.getElementById('word-tag').innerText = item.tag;
+      document.getElementById('word-dramatic-hint').innerText = `記憶線索：${item.hint}`;
+      document.getElementById('word-kanji').innerText = item.kanji;
+      document.getElementById('word-kana').innerText = item.kana;
+      document.getElementById('word-meaning').innerText = item.meaning;
+      document.getElementById('word-example').innerText = item.example;
+      document.getElementById('word-example-zh').innerText = item.example_zh;
+      document.getElementById('word-image').src = item.image;
+
+      document.getElementById('word-answer').classList.add('hidden');
+      document.getElementById('btn-reveal').classList.remove('hidden');
+      document.getElementById('review-actions').classList.add('hidden');
+      document.getElementById('queue-remaining').innerText = `配額剩餘：${vocabQueue.length} / 50`;
+
+      speakJapanese(item.kana);
+    }
+
+    function revealAnswer() {
+      document.getElementById('word-answer').classList.remove('hidden');
+      document.getElementById('btn-reveal').classList.add('hidden');
+      document.getElementById('review-actions').classList.remove('hidden');
+    }
+
+    function handleResult(isMastered) {
+      const current = vocabQueue.shift();
+      if (isMastered) {
+        addRewards(4, 2);
+      } else {
+        deductCoin(1);
+        vocabQueue.push(current);
+      }
+      renderCurrentWord();
+      updateGardenBattle();
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (document.getElementById('section-vocab').classList.contains('hidden')) return;
+      if (!document.getElementById('vocab-test-container').classList.contains('hidden')) return;
+
+      if (e.code === 'Space') { e.preventDefault(); revealAnswer(); }
+      else if (e.key === '1') { if (!document.getElementById('review-actions').classList.contains('hidden')) handleResult(false); }
+      else if (e.key === '2') { if (!document.getElementById('review-actions').classList.contains('hidden')) handleResult(true); }
+      else if (e.key.toLowerCase() === 'r') playCurrentWordAudio();
+      else if (e.key.toLowerCase() === 'e') playExampleAudio();
+    });
+
+    // -------------------------------------------------------------------------
+    // 6. 抽驗小測驗
+    // -------------------------------------------------------------------------
+    let testList = [];
+    let currentTestIdx = 0;
+    let currentTestItem = null;
+    let testLocked = false;
+    let testCorrectCount = 0;
+
+    function startDailyVocabTest() {
+      document.getElementById('vocab-study-card').classList.add('hidden');
+      document.getElementById('vocab-test-container').classList.remove('hidden');
+
+      testList = [...FULL_50_VOCABULARY].sort(() => 0.5 - Math.random()).slice(0, 5);
+      currentTestIdx = 0;
+      testCorrectCount = 0;
+      renderTestQuestion();
+    }
+
+    function renderTestQuestion() {
+      testLocked = false;
+      currentTestItem = testList[currentTestIdx];
+      document.getElementById('test-progress-text').innerText = `測驗 ${currentTestIdx + 1} / ${testList.length}`;
+      document.getElementById('test-q-target').innerText = currentTestItem.kanji;
+      speakJapanese(currentTestItem.kana);
+
+      let distractors = FULL_50_VOCABULARY
+        .filter(v => v.kanji !== currentTestItem.kanji)
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 3)
+        .map(v => `${v.kana} (${v.meaning})`);
+
+      let correctOptionText = `${currentTestItem.kana} (${currentTestItem.meaning})`;
+      let allOptions = [...distractors, correctOptionText].sort(() => 0.5 - Math.random());
+
+      const grid = document.getElementById('test-options-grid');
+      grid.innerHTML = allOptions.map((opt, i) => `
+        <button onclick="submitTestAnswer('${opt}', '${correctOptionText}')" class="p-3 rounded-xl border border-slate-800 bg-slate-950/70 hover:bg-slate-800 text-left text-xs font-medium transition flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-slate-800 text-[10px] flex items-center justify-center font-bold text-slate-400">${i + 1}</span>
+            <span>${opt}</span>
+          </div>
+        </button>
+      `).join('');
+
+      document.getElementById('test-feedback-box').classList.add('hidden');
+      document.getElementById('btn-next-test').classList.add('hidden');
+    }
+
+    function submitTestAnswer(selected, correct) {
+      if (testLocked) return;
+      testLocked = true;
+      const feedback = document.getElementById('test-feedback-box');
+      const isCorrect = selected === correct;
+
+      if (isCorrect) {
+        testCorrectCount++;
+        feedback.className = "mt-4 p-3.5 rounded-xl text-xs border bg-emerald-950/40 border-emerald-800 text-emerald-300";
+        feedback.innerHTML = `<strong>🎉 正解！</strong><br><span class="text-slate-300 mt-1 block">例句：${currentTestItem.example}</span>`;
+      } else {
+        deductCoin(1);
+        feedback.className = "mt-4 p-3.5 rounded-xl text-xs border bg-rose-950/40 border-rose-800 text-rose-300";
+        feedback.innerHTML = `<strong>❌ 不正解！(-1 💰) 正確為：${correct}</strong><br><span class="text-slate-300 mt-1 block">例句：${currentTestItem.example}</span>`;
+      }
+
+      feedback.classList.remove('hidden');
+      document.getElementById('btn-next-test').classList.remove('hidden');
+    }
+
+    function nextTestQuestion() {
+      if (currentTestIdx < testList.length - 1) {
+        currentTestIdx++;
+        renderTestQuestion();
+      } else {
+        finishDailyVocabCheck();
+      }
+    }
+
+    function finishDailyVocabCheck() {
+      addRewards(50, 50);
+      const todayStr = getTodayDateStr();
+      userState.attendance[todayStr] = true;
+      userState.cleanedPoopToday = false;
+      saveAll();
+
+      document.getElementById('vocab-test-container').innerHTML = `
+        <div class="text-center py-6">
+          <div class="text-6xl mb-3">🐾🏡</div>
+          <h3 class="text-2xl font-black text-amber-400 mb-1">今日 50 字全數修煉完成！</h3>
+          <p class="text-xs text-slate-300 mt-2">測驗成績：答對 ${testCorrectCount} / ${testList.length} 題！</p>
+          <div class="mt-6 flex justify-center gap-3">
+            <button onclick="switchTab('arena')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-5 py-2.5 rounded-xl font-bold transition">前往洋房對決看煙火 🏡🎆</button>
+            <button onclick="location.reload()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-4 py-2 rounded-xl transition">重新輪播</button>
+          </div>
+        </div>
+      `;
+      renderCalendar();
+      updateGardenBattle();
+    }
+
+    // -------------------------------------------------------------------------
+    // 7. 今日文法特訓
+    // -------------------------------------------------------------------------
+    const DAILY_GRAMMAR_ITEM = {
+      level: "N3",
+      title: "〜わけにはいかない",
+      meaning: "基於社會常理、道德、法律或義務感，「在心理或情理上不能這麼做」。若為否定「〜ないわけにはいかない」則表示「不得不做」。",
+      connection: "動詞辭書形 / ない形 ＋ わけにはいかない",
+      trap: "注意「〜ないわけにはいかない」表示雙重否定＝「不得不做」。",
+      ex1: "明日は大事な試験があるので、休むわけにはいかない。",
+      ex1_zh: "明天有重要考試，因此絕不能請假。",
+      quiz: {
+        question: "親友の結婚式ですから、どんなに仕事が忙しくても（  ）。",
+        options: ["出席するわけにはいかない", "出席しないわけにはいかない", "出席してもかまわない", "出席するはずがない"],
+        ans: 1,
+        exp: "正解為 (2)。因為是摯友的婚禮，再忙也「不得不出席」，應使用「〜ないわけにはいかない」。"
+      }
+    };
+
+    function renderDailyGrammar() {
+      document.getElementById('daily-gram-level').innerText = `${DAILY_GRAMMAR_ITEM.level} 焦點文法`;
+      document.getElementById('daily-gram-title').innerText = DAILY_GRAMMAR_ITEM.title;
+      document.getElementById('daily-gram-meaning').innerText = DAILY_GRAMMAR_ITEM.meaning;
+      document.getElementById('daily-gram-connection').innerText = DAILY_GRAMMAR_ITEM.connection;
+      document.getElementById('daily-gram-trap').innerText = DAILY_GRAMMAR_ITEM.trap;
+      document.getElementById('daily-gram-ex1').innerText = DAILY_GRAMMAR_ITEM.ex1;
+      document.getElementById('daily-gram-ex1-zh').innerText = DAILY_GRAMMAR_ITEM.ex1_zh;
+    }
+
+    function startDailyGrammarTest() {
+      document.getElementById('grammar-explain-card').classList.add('hidden');
+      document.getElementById('grammar-test-card').classList.remove('hidden');
+
+      const q = DAILY_GRAMMAR_ITEM.quiz;
+      document.getElementById('gram-test-question').innerText = q.question;
+      const optContainer = document.getElementById('gram-test-options');
+      
+      optContainer.innerHTML = q.options.map((opt, i) => `
+        <button onclick="checkGrammarQuizAnswer(${i})" class="p-3.5 rounded-xl border border-slate-800 bg-slate-950/70 hover:bg-slate-800 text-left text-sm font-medium transition flex items-center gap-3">
+          <span class="w-6 h-6 rounded-full bg-slate-800 text-xs flex items-center justify-center font-bold text-slate-400">${i + 1}</span>
+          <span>${opt}</span>
+        </button>
+      `).join('');
+
+      document.getElementById('gram-test-feedback').classList.add('hidden');
+      document.getElementById('btn-finish-gram-test').classList.add('hidden');
+    }
+
+    function checkGrammarQuizAnswer(selectedIdx) {
+      const q = DAILY_GRAMMAR_ITEM.quiz;
+      const isCorrect = selectedIdx === q.ans;
+      const feedback = document.getElementById('gram-test-feedback');
+
+      if (isCorrect) {
+        addRewards(20, 10);
+        feedback.className = "mt-4 p-4 rounded-xl text-xs border bg-emerald-950/40 border-emerald-800 text-emerald-300";
+        feedback.innerHTML = `<strong>🎉 正解！(+20 pt, +10 💰)</strong><br><span class="text-slate-300 mt-1 block">${q.exp}</span>`;
+      } else {
+        deductCoin(1);
+        feedback.className = "mt-4 p-4 rounded-xl text-xs border bg-rose-950/40 border-rose-800 text-rose-300";
+        feedback.innerHTML = `<strong>❌ 不正解！(-1 💰) 正確答案為：(${q.ans + 1}) ${q.options[q.ans]}</strong><br><span class="text-slate-300 mt-1 block">${q.exp}</span>`;
+      }
+
+      feedback.classList.remove('hidden');
+      document.getElementById('btn-finish-gram-test').classList.remove('hidden');
+      updateGardenBattle();
+    }
+
+    function finishDailyGrammarExam() {
+      alert("完成今日文法特訓！");
+      switchTab('arena');
+    }
+
+    // -------------------------------------------------------------------------
+    // 8. 商店與小球貓衣櫥管理
+    // -------------------------------------------------------------------------
+    function renderShop() {
+      const container = document.getElementById('shop-items-grid');
+      container.innerHTML = SHOP_CATALOG.map(item => {
+        const isOwned = userState.ownedItems.includes(item.id);
+        const typeLabel = item.type === 'weapon' ? '🗡️ 武器' : item.type === 'clothing' ? '🎽 服飾' : '👒 頭飾';
+        return `
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-3xl">${item.visual}</span>
+                <span class="text-[10px] bg-slate-900 px-2 py-0.5 rounded border border-slate-800 text-slate-400 font-bold">${typeLabel}</span>
+              </div>
+              <div class="font-bold text-white text-sm">${item.name}</div>
+              <p class="text-xs text-slate-400 mt-1">${item.desc}</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center">
+              <span class="text-xs font-mono font-bold text-yellow-400">💰 ${item.price}</span>
+              ${isOwned 
+                ? `<span class="text-xs text-emerald-400 font-bold">已擁有</span>` 
+                : `<button onclick="buyItem('${item.id}')" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded">購買</button>`
+              }
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function buyItem(itemId) {
+      const item = SHOP_CATALOG.find(i => i.id === itemId);
+      if (!item) return;
+      if (userState.coins < item.price) {
+        alert("金幣不足！快去背單字或挑戰 N3 考古題賺取金幣吧！");
+        return;
+      }
+      userState.coins -= item.price;
+      userState.ownedItems.push(item.id);
+      saveAll();
+      alert(`🎉 成功購買【${item.name}】！快去「圓球貓衣櫥」穿戴吧！`);
+    }
+
+    function renderInventory() {
+      const container = document.getElementById('inventory-list');
+      const owned = SHOP_CATALOG.filter(item => userState.ownedItems.includes(item.id));
+      
+      container.innerHTML = owned.map(item => {
+        const isEquipped = userState.equipped[item.type] === item.id;
+        return `
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">${item.visual}</span>
+              <div>
+                <span class="text-xs font-bold text-white block">${item.name}</span>
+                <span class="text-[10px] text-slate-500">${item.type === 'weapon' ? '右手武器' : item.type === 'clothing' ? '服飾' : '頭套'}</span>
+              </div>
+            </div>
+            ${isEquipped 
+              ? `<span class="text-xs text-emerald-400 font-bold bg-emerald-950/40 px-2.5 py-1 rounded border border-emerald-800">穿戴中</span>` 
+              : `<button onclick="equipItem('${item.id}')" class="text-xs bg-slate-800 hover:bg-slate-700 text-amber-400 px-2.5 py-1 rounded">穿戴</button>`
+            }
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('room-doll').innerHTML = generateBallCatHTML(userState.equipped);
+      document.getElementById('room-cat-name-display').innerText = userState.name;
+    }
+
+    function equipItem(itemId) {
+      const item = SHOP_CATALOG.find(i => i.id === itemId);
+      if (!item) return;
+      userState.equipped[item.type] = item.id;
+      saveAll();
+      renderInventory();
+      updateGardenBattle();
+    }
+
+    // -------------------------------------------------------------------------
+    // 9. 12/6 打卡日曆
+    // -------------------------------------------------------------------------
+    let currentCalYear = 2026;
+    let currentCalMonth = 9;
+
+    function getTodayDateStr() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function updateCountdown() {
+      const examDate = new Date(2026, 11, 6);
+      const today = new Date();
+      const diffTime = examDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const el = document.getElementById('countdown-badge');
+      if (diffDays > 0) el.innerText = `⏳ 距 12/6 檢定倒數 ${diffDays} 天`;
+      else el.innerText = `🔥 12/6 JLPT 決戰日！`;
+    }
+
+    function renderCalendar() {
+      const monthNames = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
+      document.getElementById('calendar-month-year').innerText = `${currentCalYear}年 ${monthNames[currentCalMonth]}`;
+
+      const firstDay = new Date(currentCalYear, currentCalMonth, 1).getDay();
+      const totalDays = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
+      const grid = document.getElementById('calendar-days-grid');
+      grid.innerHTML = '';
+
+      for (let i = 0; i < firstDay; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = "h-14 rounded-xl bg-slate-950/20";
+        grid.appendChild(emptyCell);
+      }
+
+      const todayStr = getTodayDateStr();
+
+      for (let day = 1; day <= totalDays; day++) {
+        const cell = document.createElement('div');
+        const dateStr = `${currentCalYear}-${String(currentCalMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const isExamDay = (currentCalYear === 2026 && currentCalMonth === 11 && day === 6);
+        const isChecked = userState.attendance && userState.attendance[dateStr];
+        const isToday = (dateStr === todayStr);
+
+        let borderClasses = "border border-slate-800 bg-slate-950/60";
+        if (isExamDay) borderClasses = "border-2 border-rose-500 bg-rose-950/40 ring-4 ring-rose-500/20 animate-pulse";
+        else if (isToday) borderClasses = "border border-blue-500 bg-blue-950/30";
+
+        cell.className = `h-14 rounded-xl p-1.5 flex flex-col justify-between text-xs transition relative ${borderClasses}`;
+        cell.innerHTML = `
+          <div class="flex justify-between items-center">
+            <span class="font-bold ${isExamDay ? 'text-rose-400 font-black' : isToday ? 'text-blue-400 font-black' : 'text-slate-400'}">${day}</span>
+            ${isExamDay ? '<span class="text-[9px] bg-rose-600 text-white px-1 rounded font-bold">JLPT!</span>' : ''}
+          </div>
+          <div class="text-center font-bold text-sm">${isChecked ? '🐾' : isExamDay ? '⚔️' : ''}</div>
+        `;
+        grid.appendChild(cell);
+      }
+
+      const totalAttended = Object.keys(userState.attendance || {}).length;
+      document.getElementById('streak-total-display').innerText = `🔥 累計完成打卡天數：${totalAttended} 天`;
+    }
+
+    function changeMonth(delta) {
+      currentCalMonth += delta;
+      if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; }
+      else if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; }
+      renderCalendar();
+    }
+
+    // -------------------------------------------------------------------------
+    // 10. N3 考古題邏輯 (扣幣回饋)
+    // -------------------------------------------------------------------------
+    const N3_QUESTIONS = [
+      { q: "この仕事は経験が（  ）、誰でも簡単にできます。", options: ["なくて", "なくても", "ないので", "ないなら"], ans: 1, exp: "〜ても：即使…也…（逆接假定條件）。" },
+      { q: "山田さんは忙しい（  ）、いつも私の相談に乗ってくれる。", options: ["わりに", "だけに", "にもかかわらず", "反面"], ans: 2, exp: "〜にもかかわらず：儘管…卻…，前後形成對比。" },
+      { q: "会議の資料は、机の上に（  ）あります。", options: ["置いて", "置かれて", "置き", "置く"], ans: 0, exp: "他動詞て形 + ある 表示人為留下的狀態。" }
+    ];
+
+    while (N3_QUESTIONS.length < 20) {
+      N3_QUESTIONS.push({...N3_QUESTIONS[N3_QUESTIONS.length % 3]});
+    }
+
+    let quizIdx = 0;
+    let quizLocked = false;
+
+    function renderQuiz() {
+      const q = N3_QUESTIONS[quizIdx];
+      document.getElementById('quiz-progress').innerText = `第 ${quizIdx + 1} / ${N3_QUESTIONS.length} 題`;
+      document.getElementById('quiz-question').innerText = `${quizIdx + 1}. ${q.q}`;
+      const container = document.getElementById('quiz-options');
+      container.innerHTML = q.options.map((opt, i) => `
+        <button onclick="submitQuizAnswer(${i})" class="p-3.5 rounded-xl border border-slate-800 bg-slate-950/60 hover:bg-slate-800 text-left text-sm font-medium transition flex items-center gap-3">
+          <span class="w-6 h-6 rounded-full bg-slate-800 text-xs flex items-center justify-center font-bold text-slate-400">${i + 1}</span>
+          <span>${opt}</span>
+        </button>
+      `).join('');
+      document.getElementById('quiz-feedback').classList.add('hidden');
+      document.getElementById('btn-next-question').classList.add('hidden');
+      quizLocked = false;
+    }
+
+    function submitQuizAnswer(choice) {
+      if (quizLocked) return;
+      quizLocked = true;
+      const q = N3_QUESTIONS[quizIdx];
+      const isCorrect = choice === q.ans;
+      const feedback = document.getElementById('quiz-feedback');
+
+      if (isCorrect) {
+        addRewards(10, 5);
+        feedback.className = "mt-6 p-4 rounded-xl text-sm border bg-emerald-950/30 border-emerald-800 text-emerald-300";
+        feedback.innerHTML = `<strong>🎉 正解！(+10 pt, +5 💰)</strong><br><span class="text-xs text-slate-300 mt-1 block">${q.exp}</span>`;
+      } else {
+        deductCoin(1);
+        feedback.className = "mt-6 p-4 rounded-xl text-sm border bg-rose-950/30 border-rose-800 text-rose-300";
+        feedback.innerHTML = `<strong>❌ 不正解！(-1 💰) 正確答案是：(${q.ans + 1}) ${q.options[q.ans]}</strong><br><span class="text-xs text-slate-300 mt-1 block">${q.exp}</span>`;
+      }
+      feedback.classList.remove('hidden');
+      document.getElementById('btn-next-question').classList.remove('hidden');
+      updateGardenBattle();
+    }
+
+    function nextQuestion() {
+      if (quizIdx < N3_QUESTIONS.length - 1) {
+        quizIdx++;
+        renderQuiz();
+      } else {
+        document.getElementById('quiz-box').innerHTML = `
+          <div class="text-center py-8">
+            <div class="text-5xl mb-3">🐱🎖️</div>
+            <h3 class="text-xl font-black text-white">20 題考古題全數完成！</h3>
+            <p class="text-xs text-slate-400 mt-2">快到洋房對決看看贏家煙火！</p>
+          </div>
+        `;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 11. 雙人對決連結與初始化
+    // -------------------------------------------------------------------------
+    function generateFriendLink() {
+      userState.name = document.getElementById('input-user-name').value.trim() || userState.name;
+      saveAll();
+      const currentUrl = window.location.origin + window.location.pathname;
+      const inviteUrl = `${currentUrl}?host=${encodeURIComponent(userState.name)}&new_duel=true`;
+      navigator.clipboard.writeText(inviteUrl).then(() => alert(`鄰居對決連結已複製：\n${inviteUrl}`));
+    }
+
+    function resetDuelMatch() {
+      if (confirm("確定要將雙方花園戰意歸零重新開戰嗎？")) {
+        userState.points = 0;
+        duelState.friendPoints = 0;
+        userState.cleanedPoopToday = false;
+        saveAll();
+        updateGardenBattle();
+      }
+    }
+
+
+    // -------------------------------------------------------------------------
+    // GitHub-only：手動同步（不需要任何後端）
+    // -------------------------------------------------------------------------
+    const SYNC_VERSION = 1;
+
+    function makeSyncPayload() {
+      return {
+        v: SYNC_VERSION,
+        exportedAt: new Date().toISOString(),
+        user: userState,
+        duel: duelState,
+        vocab: window.vocabSession ? {
+          queue: vocabSession.queue || [],
+          index: vocabSession.index || 0,
+          mastered: vocabSession.mastered || []
+        } : null
+      };
+    }
+
+    function encodeSyncPayload(payload) {
+      const json = JSON.stringify(payload);
+      const bytes = new TextEncoder().encode(json);
+      let binary = '';
+      bytes.forEach(b => binary += String.fromCharCode(b));
+      return btoa(binary);
+    }
+
+    function decodeSyncPayload(code) {
+      const binary = atob(code.trim());
+      const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+      return JSON.parse(new TextDecoder().decode(bytes));
+    }
+
+    function exportSyncCode() {
+      try {
+        const code = encodeSyncPayload(makeSyncPayload());
+        navigator.clipboard.writeText(code).then(() => {
+          alert('同步碼已複製！\n\n請把這串代碼傳給另一台裝置。\n對方按「📥 匯入朋友同步碼」即可。\n\n注意：同步碼包含目前的遊戲資料，請只傳給你的朋友。');
+        }).catch(() => {
+          prompt('請複製以下同步碼：', code);
+        });
+      } catch (e) {
+        alert('產生同步碼失敗：' + e.message);
+      }
+    }
+
+    function importSyncCode() {
+      const code = prompt('請貼上朋友傳給你的同步碼：');
+      if (!code) return;
+      try {
+        const payload = decodeSyncPayload(code);
+        if (!payload || payload.v !== SYNC_VERSION || !payload.user) throw new Error('同步碼格式不正確');
+        if (!confirm(`即將匯入「${payload.user.name || '朋友'}」的資料。\n\n這會更新目前的鄰居對戰分數與朋友資訊，但不會刪除你的購買裝備。\n確定繼續嗎？`)) return;
+        duelState.friendName = payload.user.name || duelState.friendName;
+        duelState.friendPoints = Number(payload.user.points || 0);
+        duelState.friendEquipped = payload.user.equipped || duelState.friendEquipped;
+        duelState.lastImportedAt = payload.exportedAt || new Date().toISOString();
+        saveAll();
+        alert(`已同步「${duelState.friendName}」的進度！\n目前對方：${duelState.friendPoints} pt`);
+      } catch (e) {
+        alert('匯入失敗：同步碼可能被截斷或不是《日語貓戰士》的同步碼。');
+      }
+    }
+
+    function copyDailyShare() {
+      const payload = {
+        v: SYNC_VERSION,
+        type: 'daily',
+        date: new Date().toISOString().slice(0,10),
+        name: userState.name,
+        points: userState.points,
+        coins: userState.coins,
+        attendance: userState.attendance || {}
+      };
+      const code = encodeSyncPayload(payload);
+      navigator.clipboard.writeText(code).then(() => {
+        alert('今日挑戰碼已複製！\n把它傳給朋友即可讓對方看到你的今日分數。');
+      }).catch(() => prompt('請複製今日挑戰碼：', code));
+    }
+
+    // 同一台電腦開兩個分頁時，仍可即時互通；不同裝置則使用上面的同步碼。
+    const syncChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('japanese-cat-warrior') : null;
+    if (syncChannel) {
+      syncChannel.onmessage = (event) => {
+        if (!event.data || event.data.type !== 'duel-update') return;
+        const incoming = event.data.payload;
+        if (!incoming || incoming.name === userState.name) return;
+        duelState.friendName = incoming.name;
+        duelState.friendPoints = Number(incoming.points || 0);
+        duelState.friendEquipped = incoming.equipped || duelState.friendEquipped;
+        localStorage.setItem('cat_garden_duel', JSON.stringify(duelState));
+        updateAllUI();
+      };
+    }
+
+    function broadcastMyDuelScore() {
+      if (!syncChannel) return;
+      syncChannel.postMessage({
+        type: 'duel-update',
+        payload: {
+          name: userState.name,
+          points: userState.points,
+          equipped: userState.equipped
+        }
+      });
+    }
+
+    function updateAllUI() {
+      document.getElementById('current-user-name').innerText = userState.name;
+      document.getElementById('user-coins-badge').innerText = `💰 ${userState.coins}`;
+      document.getElementById('user-points-badge').innerText = `${userState.points} pt`;
+      document.getElementById('room-coins').innerText = `💰 ${userState.coins}`;
+      document.getElementById('shop-coins').innerText = `💰 ${userState.coins}`;
+      document.getElementById('display-friend-name-tag').innerText = duelState.friendName;
+
+      renderShop();
+      renderInventory();
+      updateGardenBattle();
+    }
+
+    function switchTab(tab) {
+      ['arena', 'vocab', 'calendar', 'daily-grammar', 'quiz', 'room', 'shop'].forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        const sec = document.getElementById(`section-${t}`);
+        if (btn) btn.className = (t === tab) ? "px-3 py-1.5 rounded-md font-medium bg-blue-600 text-white transition" : "px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition";
+        if (sec) sec.classList.toggle('hidden', t !== tab);
+      });
+      if (tab === 'arena') updateGardenBattle();
+      if (tab === 'calendar') renderCalendar();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const hostUser = urlParams.get('host');
+      if (hostUser) {
+        const myName = prompt(`收到「${hostUser}」的洋房對決邀請！請輸入您的貓咪暱稱：`, "挑戰者貓");
+        if (myName) {
+          userState = loadUserData(myName);
+          userState.points = 0;
+          duelState.friendName = hostUser;
+          duelState.friendPoints = 0;
+          saveAll();
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }
+      initVocabSession();
+      renderQuiz();
+      renderDailyGrammar();
+      renderCalendar();
+      updateCountdown();
+      updateAllUI();
+    });
+  </script>
+
+  <footer class="text-center text-[11px] text-slate-600 py-6 px-4">
+    GitHub-only 版本：無 Firebase / Supabase。跨裝置同步採手動同步碼；同裝置雙分頁可用 BroadcastChannel 即時更新。
+  </footer>
+</body>
+</html>
